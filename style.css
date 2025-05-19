@@ -67,9 +67,34 @@ body {
     height: 100%;
 }
 
+.teacher {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    background-color: #8e44ad;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+}
+
+.teacher::after {
+    content: '👨‍🏫';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+}
+
+.teacher:hover {
+    transform: scale(1.1);
+}
+
 .student {
-    width: 60px;
-    height: 60px;
+    width: 40px;
+    height: 40px;
     position: absolute;
     cursor: pointer;
     transition: transform 0.3s ease;
@@ -80,6 +105,7 @@ body {
     align-items: center;
     color: white;
     font-weight: bold;
+    font-size: 14px;
 }
 
 .student:hover {

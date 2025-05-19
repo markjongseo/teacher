@@ -1,3 +1,57 @@
+class Teacher {
+    constructor() {
+        this.element = document.createElement('div');
+        this.element.className = 'teacher';
+        this.x = gameBoard.offsetWidth / 2;
+        this.y = gameBoard.offsetHeight / 2;
+        this.speed = 8;
+        this.updatePosition();
+        this.pressedKeys = new Set();
+    }
+
+    updatePosition() {
+        this.element.style.left = `${this.x}px`;
+        this.element.style.top = `${this.y}px`;
+    }
+
+    move() {
+        if (!gameState.isPlaying) return;
+
+        let dx = 0;
+        let dy = 0;
+
+        if (this.pressedKeys.has('ArrowLeft')) dx -= 1;
+        if (this.pressedKeys.has('ArrowRight')) dx += 1;
+        if (this.pressedKeys.has('ArrowUp')) dy -= 1;
+        if (this.pressedKeys.has('ArrowDown')) dy += 1;
+
+        // 대각선 이동시 속도 정규화
+        if (dx !== 0 && dy !== 0) {
+            const normalizer = 1 / Math.sqrt(2);
+            dx *= normalizer;
+            dy *= normalizer;
+        }
+
+        const newX = this.x + dx * this.speed;
+        const newY = this.y + dy * this.speed;
+
+        this.x = Math.max(0, Math.min(newX, gameBoard.offsetWidth - 40));
+        this.y = Math.max(0, Math.min(newY, gameBoard.offsetHeight - 40));
+
+        this.updatePosition();
+    }
+
+    checkCollision(student) {
+        const teacherRect = this.element.getBoundingClientRect();
+        const studentRect = student.element.getBoundingClientRect();
+
+        return !(teacherRect.right < studentRect.left || 
+                teacherRect.left > studentRect.right || 
+                teacherRect.bottom < studentRect.top || 
+                teacherRect.top > studentRect.bottom);
+    }
+}
+
 class Student {
     constructor(id, x, y) {
         this.id = id;
@@ -6,10 +60,8 @@ class Student {
         this.element.textContent = id + 1;
         this.setPosition(x, y);
         this.isDistracted = false;
-        this.distractionProbability = 0.005;
-        this.moveSpeed = 1;
-
-        this.element.addEventListener('click', () => this.handleClick());
+        this.distractionProbability = 0.008;
+        this.moveSpeed = 2;
     }
 
     setPosition(x, y) {
@@ -19,16 +71,12 @@ class Student {
         this.element.style.top = `${y}px`;
     }
 
-    handleClick() {
-        if (this.isDistracted && gameState.isPlaying) {
-            this.focus();
+    focus() {
+        if (this.isDistracted) {
+            this.isDistracted = false;
+            this.element.classList.remove('distracted');
             gameState.addScore(1);
         }
-    }
-
-    focus() {
-        this.isDistracted = false;
-        this.element.classList.remove('distracted');
     }
 
     distract() {
@@ -39,17 +87,14 @@ class Student {
     move() {
         if (!gameState.isPlaying) return;
 
-        // 랜덤한 방향으로 움직임
         const dx = (Math.random() - 0.5) * this.moveSpeed * 2;
         const dy = (Math.random() - 0.5) * this.moveSpeed * 2;
 
-        // 게임 보드 경계 확인
         const newX = Math.max(0, Math.min(this.x + dx, gameBoard.offsetWidth - this.element.offsetWidth));
         const newY = Math.max(0, Math.min(this.y + dy, gameBoard.offsetHeight - this.element.offsetHeight));
 
         this.setPosition(newX, newY);
 
-        // 집중하고 있는 상태에서만 딴짓할 확률 계산
         if (!this.isDistracted && Math.random() < this.distractionProbability) {
             this.distract();
         }
@@ -61,6 +106,7 @@ const gameState = {
     timeLeft: 60,
     isPlaying: false,
     students: [],
+    teacher: null,
     gameLoop: null,
     timerInterval: null,
 
@@ -79,17 +125,18 @@ const gameState = {
     startGame() {
         if (this.isPlaying) return;
 
-        // 게임 상태 초기화
         this.score = 0;
         this.timeLeft = 60;
         this.isPlaying = true;
         document.getElementById('score').textContent = '0';
         this.updateTimer();
 
-        // 학생들 생성
         const studentsContainer = document.querySelector('.students-container');
         studentsContainer.innerHTML = '';
         this.students = [];
+
+        this.teacher = new Teacher();
+        studentsContainer.appendChild(this.teacher.element);
 
         for (let i = 0; i < 8; i++) {
             const student = new Student(i,
@@ -100,18 +147,16 @@ const gameState = {
             this.students.push(student);
         }
 
-        // 게임 루프 시작
         this.gameLoop = setInterval(() => {
+            if (this.teacher) this.teacher.move();
             this.students.forEach(student => student.move());
-        }, 50);
+        }, 33);
 
-        // 타이머 시작
         this.timerInterval = setInterval(() => {
             this.timeLeft--;
             this.updateTimer();
         }, 1000);
 
-        // UI 업데이트
         document.getElementById('start-btn').style.display = 'none';
         document.getElementById('game-over').classList.add('hidden');
     },
@@ -121,18 +166,34 @@ const gameState = {
         clearInterval(this.gameLoop);
         clearInterval(this.timerInterval);
 
-        // 최종 점수 표시
         document.getElementById('final-score').textContent = this.score;
         document.getElementById('game-over').classList.remove('hidden');
         document.getElementById('start-btn').style.display = 'block';
     }
 };
 
-// DOM 요소
 const gameBoard = document.querySelector('.game-board');
 const startButton = document.getElementById('start-btn');
 const restartButton = document.getElementById('restart-btn');
 
-// 이벤트 리스너
+document.addEventListener('keydown', (event) => {
+    if (!gameState.teacher) return;
+
+    gameState.teacher.pressedKeys.add(event.key);
+
+    if (event.key === ' ') {
+        gameState.students.forEach(student => {
+            if (gameState.teacher.checkCollision(student)) {
+                student.focus();
+            }
+        });
+    }
+});
+
+document.addEventListener('keyup', (event) => {
+    if (!gameState.teacher) return;
+    gameState.teacher.pressedKeys.delete(event.key);
+});
+
 startButton.addEventListener('click', () => gameState.startGame());
 restartButton.addEventListener('click', () => gameState.startGame());
