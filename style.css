@@ -226,9 +226,9 @@ body {
     display: none;
 }
 
-@media (hover: none) and (pointer: coarse) and (max-width: 768px) {
+@media (max-width: 768px) {
     .joystick-container {
-        display: block;
+        display: block !important;
     }
 }
 
