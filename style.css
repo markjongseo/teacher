@@ -85,13 +85,9 @@ body {
 .classroom-background {
     width: 100%;
     height: 100%;
-    background-color: #f8f9fa;
-    background-image: linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
-                      linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
-                      linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
-                      linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
-    background-size: 20px 20px;
-    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    background-image: url('게임배경이미지.png');
+    background-size: cover;
+    background-position: center;
 }
 
 .students-container {
